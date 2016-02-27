@@ -17,6 +17,9 @@ namespace StickyHeader_WindowsComposition
                 var transform = ((UIElement)MainScroll.Content).TransformToVisual(StickyGrid);
                 var offsetY = (float)transform.TransformPoint(new Point(0, 0)).Y;
 
+                // Bring the element to the very front.
+                Canvas.SetZIndex(StickyGrid, 1);
+
                 // Get Composition variables.
                 var scrollProperties = ElementCompositionPreview.GetScrollViewerManipulationPropertySet(MainScroll);
                 var stickyGridVisual = ElementCompositionPreview.GetElementVisual(StickyGrid);

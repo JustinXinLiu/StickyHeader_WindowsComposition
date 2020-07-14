@@ -37,7 +37,8 @@ namespace StickyHeader_WindowsComposition
                 scrollingAnimation.SetScalarParameter("OffsetY", offsetY);
 
                 // Kick off the expression animation.
-                stickyGridVisual.StartAnimation("Offset.Y", scrollingAnimation);
+                ElementCompositionPreview.SetIsTranslationEnabled(StickyGrid, true);
+                stickyGridVisual.StartAnimation("Translation.Y", scrollingAnimation);
             };
         }
     }

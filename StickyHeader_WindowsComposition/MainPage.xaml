@@ -22,16 +22,20 @@
                            Fill="#FFB3B3E7"
                            d:LayoutOverrides="LeftPosition, RightPosition" />
                 <Grid x:Name="StickyGrid"
-                      Height="100"
-                      Margin="12,6"
-                      Background="#FFDDD400">
-                    <TextBlock HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               FontSize="18.667"
-                               FontWeight="Black"
-                               Foreground="White"
-                               Text="I AM STICKY!"
-                               TextWrapping="Wrap" />
+                      Height="200"
+                      Margin="12,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="4*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+
+                    <Rectangle x:Name="StickyGridBackground"
+                               Grid.RowSpan="2"
+                               Grid.ColumnSpan="2" />
                 </Grid>
                 <Rectangle Height="100"
                            Margin="12,6"

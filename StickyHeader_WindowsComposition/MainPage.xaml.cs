@@ -1,18 +1,106 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Numerics;
 using Windows.Foundation;
+using Windows.UI;
+using Windows.UI.Composition;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Hosting;
 
 namespace StickyHeader_WindowsComposition
 {
+    [Flags]
+    public enum VisualPropertyType
+    {
+        None = 0,
+        Opacity = 1 << 0,
+        Offset = 1 << 1,
+        Scale = 1 << 2,
+        Size = 1 << 3,
+        RotationAngleInDegrees = 1 << 4,
+        All = ~0
+    }
+
+    public static class Extensions
+    {
+        public static IEnumerable<T> GetValues<T>() => Enum.GetValues(typeof(T)).Cast<T>();
+
+        public static void EnableImplicitAnimation(this Visual visual, VisualPropertyType typeToAnimate,
+            double duration = 800, double delay = 0, CompositionEasingFunction easing = null)
+        {
+            var compositor = visual.Compositor;
+
+            var animationCollection = compositor.CreateImplicitAnimationCollection();
+
+            foreach (var type in GetValues<VisualPropertyType>())
+            {
+                if (!typeToAnimate.HasFlag(type)) continue;
+
+                var animation = CreateAnimationByType(compositor, type, duration, delay, easing);
+
+                if (animation != null)
+                {
+                    animationCollection[type.ToString()] = animation;
+                }
+            }
+
+            visual.ImplicitAnimations = animationCollection;
+        }
+
+        private static KeyFrameAnimation CreateAnimationByType(Compositor compositor, VisualPropertyType type,
+            double duration = 800, double delay = 0, CompositionEasingFunction easing = null)
+        {
+            KeyFrameAnimation animation;
+
+            switch (type)
+            {
+                case VisualPropertyType.Offset:
+                case VisualPropertyType.Scale:
+                    animation = compositor.CreateVector3KeyFrameAnimation();
+                    break;
+                case VisualPropertyType.Size:
+                    animation = compositor.CreateVector2KeyFrameAnimation();
+                    break;
+                case VisualPropertyType.Opacity:
+                case VisualPropertyType.RotationAngleInDegrees:
+                    animation = compositor.CreateScalarKeyFrameAnimation();
+                    break;
+                default:
+                    return null;
+            }
+
+            animation.InsertExpressionKeyFrame(1.0f, "this.FinalValue", easing);
+            animation.Duration = TimeSpan.FromMilliseconds(duration);
+            animation.DelayTime = TimeSpan.FromMilliseconds(delay);
+            animation.Target = type.ToString();
+
+            return animation;
+        }
+    }
+
     public sealed partial class MainPage : Page
     {
+        private readonly Compositor _compositor;
         private float _offsetY;
 
         public MainPage()
         {
             InitializeComponent();
+
+            _compositor = Window.Current.Compositor;
+
+            var stickyHeaderBgVisual = _compositor.CreateSpriteVisual();
+            stickyHeaderBgVisual.Brush = _compositor.CreateColorBrush(Colors.Orange);
+            //stickyHeaderBgVisual.RelativeSizeAdjustment = Vector2.One;
+            ElementCompositionPreview.SetElementChildVisual(StickyGridBackground, stickyHeaderBgVisual);
+
+            StickyGridBackground.SizeChanged += (s, e) =>
+            {
+                stickyHeaderBgVisual.Size = e.NewSize.ToVector2();
+            };
 
             Loaded += (s, e) =>
             {
@@ -24,21 +112,25 @@ namespace StickyHeader_WindowsComposition
                 Canvas.SetZIndex(StickyGrid, 1);
 
                 MakeSticky();
+
+                stickyHeaderBgVisual.EnableImplicitAnimation(VisualPropertyType.Size, 400);
             };
 
             MainScroll.ViewChanged += (s, e) =>
             {
 
-                if (MainScroll.VerticalOffset > -_offsetY)
+                if (MainScroll.VerticalOffset > -_offsetY * 3)
                 {
-                    StickyGrid.Opacity = 0.5;
+                    Grid.SetRowSpan(StickyGridBackground, 1);
+                    Grid.SetColumnSpan(StickyGridBackground, 1);
                 }
                 else
                 {
-                    StickyGrid.Opacity = 1;
+                    Grid.SetRowSpan(StickyGridBackground, 2);
+                    Grid.SetColumnSpan(StickyGridBackground, 2);
                 }
 
-                Debug.WriteLine(MainScroll.VerticalOffset);
+                //Debug.WriteLine(MainScroll.VerticalOffset);
             };
         }
 
